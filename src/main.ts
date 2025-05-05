@@ -10,6 +10,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
+    forbidNonWhitelisted	: true,
   }));
 
   app.setGlobalPrefix('api/AnhThi1', { exclude: [''] }); // tạo tiền tố cho tất cả các route và trang chủ là trang hello world
