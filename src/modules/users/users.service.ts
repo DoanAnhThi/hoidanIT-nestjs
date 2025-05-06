@@ -6,6 +6,7 @@ import { User } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { hashPasswordHelper } from '@/helpers/util';
 import aqp from 'api-query-params';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class UsersService {
@@ -66,11 +67,18 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(updateUserDto: UpdateUserDto) {
+    return await this.userModel.updateOne(
+      {_id: updateUserDto._id}, {...updateUserDto}); // ... là toán tử spread để lấy tất cả các trường trong updateUserDto
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(_id: string) {
+    // check id
+    if (mongoose.isValidObjectId(_id)) {
+      // delete user
+      return this.userModel.deleteOne({_id})
+    }else {
+      throw new BadRequestException(`Id ${_id} không hợp lệ`);
+    }
   }
 }
