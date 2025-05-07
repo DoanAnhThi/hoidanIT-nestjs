@@ -10,6 +10,9 @@ import mongoose from 'mongoose';
 
 @Injectable()
 export class UsersService {
+  findbyEmail(username: string) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectModel(User.name) 
     private userModel: Model<User>
@@ -66,6 +69,11 @@ export class UsersService {
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
+
+  async findByEmail (email: string) {
+    return await this.userModel.findOne({email})
+  }
+
 
   async update(updateUserDto: UpdateUserDto) {
     return await this.userModel.updateOne(
