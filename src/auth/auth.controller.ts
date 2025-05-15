@@ -7,10 +7,13 @@ import { Public } from '@/decorator/customize';
 import { register } from 'module';
 import { registerDecorator } from 'class-validator';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly authService: AuthService) {}
 
   @Post('login')
   @Public()
@@ -25,5 +28,18 @@ export class AuthController {
   @Public()
   register(@Body() registerDto: CreateAuthDto) {
     return this.authService.handleRegister(registerDto);
+  }
+
+  @Get('mail')
+  @Public()
+  testMail() {
+    this.mailerService
+    .sendMail({
+      to: 'bincalam28499@gmail.com', // list of receivers
+      subject: 'Tao lao bi dao ✔', // Subject line
+      text: 'welcome', // plaintext body
+      html: '<b>Hello World with Thi</b>', // HTML body content
+    })
+    return "ok";
   }
 }

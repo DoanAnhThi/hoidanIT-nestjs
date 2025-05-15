@@ -33,3 +33,8 @@ Cách chạy tại chế độ production:
 3. Update file .env.production (nếu cần thiết)
 4. Build dự án: npm run build
 5. Chạy dự án: npm run preview
+
+
+# Tài khoản ảo để gửi mail 
+App name: anhthi-next-nest-4rn
+password: ywfy nnie vusr qnly
