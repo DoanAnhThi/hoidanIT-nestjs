@@ -38,7 +38,11 @@ export class AuthController {
       to: 'bincalam28499@gmail.com', // list of receivers
       subject: 'Tao lao bi dao ✔', // Subject line
       text: 'welcome', // plaintext body
-      html: '<b>Hello World with Thi</b>', // HTML body content
+      template: "register",
+      context: {
+        name: "Tuyet Huong xin đẹp",
+        activationCode: 123456,
+      }
     })
     return "ok";
   }
