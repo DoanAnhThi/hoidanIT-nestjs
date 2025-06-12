@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { JwtAuthGuard } from './passport/jwt-auth.guard';
-import { Public } from '@/decorator/customize';
+import { Public, ResponseMessage } from '@/decorator/customize';
 import { register } from 'module';
 import { registerDecorator } from 'class-validator';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -18,6 +18,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @UseGuards(LocalAuthGuard)
+  @ResponseMessage('Fetch login')
   handleLogin(@Request() req) {
 
     return this.authService.login(req.user);
