@@ -16,6 +16,16 @@ async function bootstrap() {
   app.setGlobalPrefix('api/AnhThi1', { exclude: [''] }); // tạo tiền tố cho tất cả các route và trang chủ là trang hello world
   //app.setGlobalPrefix('api/AnhThi1'); // tạo tiền tố cho tất cả các route và trang api là trang hello world
 
+  //config cors
+  app.enableCors(
+    {
+      "origin": true,
+      "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+      "preflightContinue": false,
+      credentials: true
+    }
+  );
+
 
   await app.listen(port);
 }
