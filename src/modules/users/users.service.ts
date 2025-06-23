@@ -20,46 +20,46 @@ export class UsersService {
     throw new Error('Method not implemented.');
   }
   constructor(
-    @InjectModel(User.name) 
+    @InjectModel(User.name)
     private userModel: Model<User>,
     private readonly mailerService: MailerService,
-  ) {}
+  ) { }
 
-  isEmailExist = async(email: string) => {
-    const user = await this.userModel.exists({email});
+  isEmailExist = async (email: string) => {
+    const user = await this.userModel.exists({ email });
     if (user) return true;
     return false;
   }
   async create(createUserDto: CreateUserDto) {
-    const {name, email, password, phone, address, image} = createUserDto;
-    
+    const { name, email, password, phone, address, image } = createUserDto;
+
     // check if email exists
     const isEmailExist = await this.isEmailExist(email); // promise nên phải có await để chờ kết quả trả về trước khi tiếp tục
     if (isEmailExist) {
-      throw new  BadRequestException(`Email ${email} đã tồn tại. Vui lòng sử dụng email khác`); 
+      throw new BadRequestException(`Email ${email} đã tồn tại. Vui lòng sử dụng email khác`);
     }
-    
-    
+
+
     // hash password
-    const hashPassword = await hashPasswordHelper(password); 
+    const hashPassword = await hashPasswordHelper(password);
     const user = await this.userModel.create({
       name, email, password: hashPassword, phone, address, image
     })
     return {
       _id: user._id,
     }
-    
+
     return 'This action adds a new user';
   }
 
-  async findAll(query: string , current: number, pageSize: number) {
-    const {filter, sort} = aqp(query);
+  async findAll(query: string, current: number, pageSize: number) {
+    const { filter, sort } = aqp(query);
     if (filter.current) delete filter.current;
     if (filter.pageSize) delete filter.pageSize;
 
-    if(!current) current = 1;
-    if(!pageSize) pageSize = 10;
-    
+    if (!current) current = 1;
+    if (!pageSize) pageSize = 10;
+
     const totalItems = (await this.userModel.find(filter)).length;
     const totalPages = Math.ceil(totalItems / pageSize);
     const skip = (+current - 1) * +pageSize;
@@ -70,29 +70,29 @@ export class UsersService {
       .skip(skip)
       .select('-password -__v') // dấu trừ để loại bỏ trường password và __v
       .sort(sort as any)
-    return {results, totalPages};
+    return { results, totalPages };
   }
 
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
 
-  async findByEmail (email: string) {
-    return await this.userModel.findOne({email})
+  async findByEmail(email: string) {
+    return await this.userModel.findOne({ email })
   }
 
 
   async update(updateUserDto: UpdateUserDto) {
     return await this.userModel.updateOne(
-      {_id: updateUserDto._id}, {...updateUserDto}); // ... là toán tử spread để lấy tất cả các trường trong updateUserDto
+      { _id: updateUserDto._id }, { ...updateUserDto }); // ... là toán tử spread để lấy tất cả các trường trong updateUserDto
   }
 
   async remove(_id: string) {
     // check id
     if (mongoose.isValidObjectId(_id)) {
       // delete user
-      return this.userModel.deleteOne({_id})
-    }else {
+      return this.userModel.deleteOne({ _id })
+    } else {
       throw new BadRequestException(`Id ${_id} không hợp lệ`);
     }
   }
@@ -117,6 +117,7 @@ export class UsersService {
       codeExpired: dayjs().add(5, 'minutes'),
     });
 
+    // send mail
     await this.mailerService.sendMail({
       to: user.email,
       subject: 'Kích hoạt tài khoản ✔',
@@ -142,17 +143,52 @@ export class UsersService {
     }
 
     // check code expired
-    const isBeforeCheck =  dayjs().isBefore(user.codeExpired);
-    
-    if (isBeforeCheck) { 
+    const isBeforeCheck = dayjs().isBefore(user.codeExpired);
+
+    if (isBeforeCheck) {
       //valid => update user
-      await this.userModel.updateOne({_id: data._id},{
+      await this.userModel.updateOne({ _id: data._id }, {
         is_active: true
       })
-      return {isBeforeCheck};
-    }else {
+      return { isBeforeCheck };
+    } else {
       throw new BadRequestException(`Mã kích hoạt đã hết hạn`);
     }
 
   }
+
+  async retryActive(email: string) {
+    // check email
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException(`Tài khoản ${email} không tồn tại`);
+    }
+    // check is_active
+    if (user.is_active) {
+      throw new BadRequestException(`Tài khoản ${email} đã được kích hoạt`);
+    }
+    // generate new code
+    const activationCode = uuidv4();
+    const codeExpired = dayjs().add(5, 'minutes');
+    // update user
+    await this.userModel.updateOne(
+      { _id: user._id },
+      {
+        code_id: activationCode,
+        codeExpired: codeExpired,
+      }
+    );
+    // send mail
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Kích hoạt tài khoản ✔',
+      template: 'register',
+      context: {
+        name: user?.name ?? user.email,
+        activationCode: activationCode
+      },
+    });
+    return { _id: user._id }
+  }
+
 }
