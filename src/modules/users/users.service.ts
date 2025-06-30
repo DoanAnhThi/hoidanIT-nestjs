@@ -7,7 +7,7 @@ import { Model } from 'mongoose';
 import { hashPasswordHelper } from '@/helpers/util';
 import aqp from 'api-query-params';
 import mongoose from 'mongoose';
-import { CodeAuthDto, CreateAuthDto } from '@/auth/dto/create-auth.dto';
+import { changePasswordAuthDto, CodeAuthDto, CreateAuthDto } from '@/auth/dto/create-auth.dto';
 import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -191,4 +191,60 @@ export class UsersService {
     return { _id: user._id }
   }
 
+  async retryPassword(email: string) {
+    // check email
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException(`Tài khoản ${email} không tồn tại`);
+    }
+
+    // generate new code
+    const activationCode = uuidv4();
+    const codeExpired = dayjs().add(5, 'minutes');
+    // update user
+    await this.userModel.updateOne(
+      { _id: user._id },
+      {
+        code_id: activationCode,
+        codeExpired: codeExpired,
+      }
+    );
+    // send mail
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Thay đổi mật khẩu ✔',
+      template: 'register',
+      context: {
+        name: user?.name ?? user.email,
+        activationCode: activationCode
+      },
+    });
+    return { _id: user._id, email: user.email }
+  }
+
+  async changePassword(data: changePasswordAuthDto) {
+    if (data.confirmPassword !== data.password) {
+      throw new BadRequestException(`Mật khẩu xác nhận không khớp`);
+    }
+
+    // check email
+    const user = await this.userModel.findOne({ email: data.email });
+    if (!user) {
+      throw new BadRequestException(`Tài khoản không tồn tại`);
+    }
+
+    // check code expired
+    const isBeforeCheck = dayjs().isBefore(user.codeExpired);
+
+    if (isBeforeCheck) {
+      //valid => update password
+      const newPassword = await hashPasswordHelper(data.password);
+      await user.updateOne ({ password : newPassword })
+
+      return { isBeforeCheck };
+    } else {
+      throw new BadRequestException(`Mã kích hoạt đã hết hạn`);
+    }
+
+  }
 }
